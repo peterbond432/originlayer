@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { ethers } from "ethers";
+import { shelbyClient } from "@/lib/shelby";
 
 type UploadedFile = {
   id: string;
@@ -27,6 +28,7 @@ export default function Home() {
 
   const connectWallet = async () => {
     try {
+
       if (!(window as any).ethereum) {
         alert("Please install MetaMask");
         return;
@@ -48,15 +50,48 @@ export default function Home() {
     }
   };
 
-  const onDrop = (acceptedFiles: File[]) => {
-    const newFiles = acceptedFiles.map((file) => ({
-      id: crypto.randomUUID(),
-      name: file.name,
-      type: file.type,
-      url: URL.createObjectURL(file),
-    }));
+  const onDrop = async (acceptedFiles: File[]) => {
 
-    setFiles((prev) => [...prev, ...newFiles]);
+    const uploaded = await Promise.all(
+
+      acceptedFiles.map(async (file) => {
+
+        try {
+
+          const fileData = new Uint8Array(
+            await file.arrayBuffer()
+          );
+
+          // Shelby upload
+          await shelbyClient.rpc.putBlob({
+            account: "originlayer-user",
+            blobName: file.name,
+            blobData: fileData,
+          });
+
+          return {
+            id: crypto.randomUUID(),
+            name: file.name,
+            type: file.type,
+            url: URL.createObjectURL(file),
+          };
+
+        } catch (error) {
+
+          console.error(error);
+
+          return {
+            id: crypto.randomUUID(),
+            name: file.name,
+            type: file.type,
+            url: URL.createObjectURL(file),
+          };
+        }
+
+      })
+    );
+
+    setFiles((prev) => [...prev, ...uploaded]);
   };
 
   const { getRootProps, getInputProps } = useDropzone({
@@ -64,6 +99,7 @@ export default function Home() {
   });
 
   const renderPreview = (file: UploadedFile) => {
+
     if (file.type.startsWith("video/")) {
       return (
         <video
@@ -105,6 +141,7 @@ export default function Home() {
   };
 
   const getIcon = (type: string) => {
+
     if (type.startsWith("video/")) {
       return <Video className="text-blue-400" />;
     }
@@ -133,7 +170,7 @@ export default function Home() {
             </h1>
 
             <p className="text-zinc-400 text-lg">
-              Decentralized media & file storage
+              Shelby-powered decentralized storage
             </p>
           </div>
 
