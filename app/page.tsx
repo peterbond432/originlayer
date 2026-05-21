@@ -1,65 +1,211 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+import { useDropzone } from "react-dropzone";
+
+import {
+  Upload,
+  FileText,
+  Music,
+  Video,
+  ImageIcon,
+  Wallet,
+} from "lucide-react";
+
+import { ethers } from "ethers";
+
+type UploadedFile = {
+  id: string;
+  name: string;
+  type: string;
+  url: string;
+};
 
 export default function Home() {
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+  const [files, setFiles] = useState<UploadedFile[]>([]);
+  const [walletAddress, setWalletAddress] = useState("");
+
+  const connectWallet = async () => {
+    try {
+      if (!(window as any).ethereum) {
+        alert("Please install MetaMask");
+        return;
+      }
+
+      const provider = new ethers.BrowserProvider(
+        (window as any).ethereum
+      );
+
+      const accounts = await provider.send(
+        "eth_requestAccounts",
+        []
+      );
+
+      setWalletAddress(accounts[0]);
+
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const onDrop = (acceptedFiles: File[]) => {
+    const newFiles = acceptedFiles.map((file) => ({
+      id: crypto.randomUUID(),
+      name: file.name,
+      type: file.type,
+      url: URL.createObjectURL(file),
+    }));
+
+    setFiles((prev) => [...prev, ...newFiles]);
+  };
+
+  const { getRootProps, getInputProps } = useDropzone({
+    onDrop,
+  });
+
+  const renderPreview = (file: UploadedFile) => {
+    if (file.type.startsWith("video/")) {
+      return (
+        <video
+          controls
+          className="w-full rounded-xl"
+          src={file.url}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+      );
+    }
+
+    if (file.type.startsWith("audio/")) {
+      return (
+        <audio
+          controls
+          className="w-full"
+          src={file.url}
+        />
+      );
+    }
+
+    if (file.type.startsWith("image/")) {
+      return (
+        <img
+          src={file.url}
+          alt={file.name}
+          className="w-full rounded-xl"
+        />
+      );
+    }
+
+    return (
+      <div className="bg-zinc-800 p-6 rounded-xl flex flex-col items-center">
+        <FileText size={40} />
+        <p className="mt-2 text-sm">
+          Document Uploaded
+        </p>
+      </div>
+    );
+  };
+
+  const getIcon = (type: string) => {
+    if (type.startsWith("video/")) {
+      return <Video className="text-blue-400" />;
+    }
+
+    if (type.startsWith("audio/")) {
+      return <Music className="text-green-400" />;
+    }
+
+    if (type.startsWith("image/")) {
+      return <ImageIcon className="text-pink-400" />;
+    }
+
+    return <FileText className="text-yellow-400" />;
+  };
+
+  return (
+    <main className="min-h-screen bg-gradient-to-br from-black via-zinc-900 to-black text-white p-6">
+
+      <div className="max-w-6xl mx-auto">
+
+        <div className="flex justify-between items-center mb-10">
+
+          <div>
+            <h1 className="text-6xl font-extrabold mb-3">
+              OriginLayer
+            </h1>
+
+            <p className="text-zinc-400 text-lg">
+              Decentralized media & file storage
+            </p>
+          </div>
+
+          <button
+            onClick={connectWallet}
+            className="bg-white text-black px-5 py-3 rounded-2xl flex items-center gap-2 font-semibold hover:scale-105 transition"
+          >
+
+            <Wallet size={20} />
+
+            {walletAddress
+              ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
+              : "Connect Wallet"}
+
+          </button>
+
+        </div>
+
+        <div
+          {...getRootProps()}
+          className="border-2 border-dashed border-zinc-700 rounded-3xl p-16 text-center cursor-pointer hover:border-white transition bg-zinc-900/40"
+        >
+
+          <input {...getInputProps()} />
+
+          <Upload size={50} className="mx-auto mb-4" />
+
+          <h2 className="text-2xl font-bold mb-2">
+            Drag & Drop Files
+          </h2>
+
+          <p className="text-zinc-400">
+            Upload videos, music, images, PDFs and more
           </p>
+
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-10">
+
+          {files.map((file) => (
+            <div
+              key={file.id}
+              className="bg-black/40 border border-zinc-800 rounded-3xl p-5"
+            >
+
+              <div className="flex items-center gap-3 mb-4">
+
+                {getIcon(file.type)}
+
+                <h2 className="font-semibold truncate">
+                  {file.name}
+                </h2>
+
+              </div>
+
+              {renderPreview(file)}
+
+              <a
+                href={`/file/${file.id}`}
+                target="_blank"
+                className="mt-4 inline-block text-sm text-blue-400 hover:underline"
+              >
+                Open Share Link →
+              </a>
+
+            </div>
+          ))}
+
         </div>
-      </main>
-    </div>
+
+      </div>
+
+    </main>
   );
 }
