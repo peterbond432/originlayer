@@ -1,10 +1,15 @@
 type Props = {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 };
 
-export default function FilePage({ params }: Props) {
+export default async function FilePage({
+  params,
+}: Props) {
+
+  const { id } = await params;
+
   return (
     <main className="min-h-screen bg-black text-white flex items-center justify-center p-6">
 
@@ -25,7 +30,7 @@ export default function FilePage({ params }: Props) {
           </p>
 
           <p className="break-all text-green-400">
-            {params.id}
+            {id}
           </p>
 
         </div>
